@@ -1,0 +1,298 @@
+R.Dopfel 1 August 1, 2012
+DopfelCV 
+Addendum: sample, fundamental, very generic research - SAS Code.
+/* sample code. I am not running SAS at home so this has not been compiled or debugged. */
+/* hypothetical study. 2 datasets containing information are eventually merged. */
+/* 100 individuals recorded their number of weekly hours of exercise and their resting heart rate during 52 weeks. */
+
+page1 
+libname research 'c:\mysas';
+data research.fitness1; /*library is research - dataset is fitness1 */
+infile 'e:\sas\health2012.txt' firstobs=2;
+title " &SYSDAY , &SYSDATE9. ";
+input
+@1 id 3.
+@4 yob 4.
+@8 age 2.
+@10 sex $ 1.
+@11 meds $ 1.
+@12 rain $ 1.
+@13 colors $ 8.
+@21 hssports $ 1.
+@22 hrssleep 2.
+@24 work 1.
+@25 rhr 2.
+@27 sbp 3.
+@30 dbp 3.
+@ 33 yrexer 2.
+;
+title "Descriptive Information About Study Subjects";
+label yob = 'year of birth'
+age = 'age at the start of the study'
+sex = 'gender of individual'
+meds = 'currently on any medications'
+rain = 'likes the sound of rain'
+colors = 'favorite color'
+hssports = 'played high school sports'
+hrssleep = ' ~hours of sleep each night'
+work = 'work at least 40 hours a week'
+rhr = 'resting heart rate'
+sbp = 'systolic blood pressure onset of study'
+dbp = 'diastolic blood pressure onset of study'
+yrexer = 'years of consecutive regular exercise at least 5 hours a week';
+/* below: first 10 of 100 observations */
+datalines;
+01 1980 30 m 1 1 1 0 8 1 65 107 70 5
+02 1979 31 f 1 0 3 1 7 1 70 120 72 5
+03 1981 29 m 1 1 7 1 7 1 75 124 72 6
+04 1976 34 m 0 0 4 0 9 1 68 108 68 4
+05 1977 28 f 1 1 8 1 8 1 77 125 73 10
+06 1978 33 f 0 0 6 0 8 1 78 125 75 8
+07 1981 29 f 1 1 7 1 7 1 79 124 69 7
+08 1980 30 f 0 0 8 1 6 1 72 135 70 7
+09 1978 34 f 1 1 9 0 7 1 69 132 74 12
+10 1977 30 f 0 1 2 0 8 1 62 128 72 6 ;
+run;
+proc contents; /* review variables and labels */
+run;
+proc print data=research.fitness1 (obs=10);
+run;
+/* rename blood pressure so it does not overwrite in the merge of files later */
+oldsbp = sbp;
+olddbp = dbp;
+run;
+page 2
+data research.misc_info; /* save information about study subject into permanent dataset misc_info*/
+set research.fitness1;
+proc print data=misc_info (obs=10);
+run;
+/* the below represents data for 100 individuals - observations, only 1st 10 shown */
+/* systolic blood pressure at week 1 and week 52 */
+/* diastolic blood pressure at week 1 and week 52 */
+/* 'resting heart rate' for each of 52 weeks */
+/* 'hours of weekly exercise' for 52 weeks */
+/* 'no missing values in this dataset; missing values handled in later code */
+data cardio;
+title "&SYSDAY , &SYSDATE9. cardio information, resting heart rates and hours of weekly exercise";
+label id = 'unique identifier'
+sbp1 = 'systolic blood pressure week 1'
+sbp52 = 'systolic blood pressure week 52'
+dbp1 = 'diastolic blood pressure week 1'
+dbp52 = 'diastolic blood pressure week 52'
+rhr = 'resting heart rate'
+hrsexer1 - hrexer52 = 'hours of exercise per week';
+input
+id sbp1 sbp52 dbp1 dbp52 rhr1-rhr52 hrexer1-hrexer52;
+datalines;
+01 130 128 72 70 77 78 79 76 77 76 75 74 72 71 70 70.... 10 8 10 10 8 10 8 10 10 10 10 10 8....
+02 120 110 60 60 80 78 75 76 78 76 77 77 74 74 75 74.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+03 124 120 68 64 72 70 69 69 67 69 70 67 67 65 65 64.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+04 106 106 64 62 77 78 79 76 77 76 75 74 72 71 70 70.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+05 130 126 72 68 67 70 69 66 67 66 65 64 62 61 60 60.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+06 135 128 70 68 77 78 79 74 70 70 69 68 67 68 67 65.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+07 130 124 68 66 77 78 79 76 77 76 75 74 72 71 70 70.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+08 128 125 70 62 71 72 71 70 70 70 69 68 66 66 67 65.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+09 129 124 64 64 77 78 79 74 70 70 69 68 67 68 67 65.... 10 10 8 10 10 8 10 8 10 10 10 10 10....
+10 130 124 77 64 78 79 76 77 76 75 74 72 71 70 70 68.... 10 8 10 10 8 10 8 10 10 10 10 10 10....
+run;
+proc contents data=cardio;
+run;
+proc print data=cardio (obs=10);
+run;
+/*create new variables */
+data data=cardio2;
+set data=cardio varnum;
+tot_hr_ex = sum(of hrexer1-hrexer52);
+ave_hr_ex = sum(of hrexer1-hrexer52) / 52;
+ave_rhr = sum(of rhr1-rhr52) / 52;
+diff_rhr = (mean(of rhr1 - rhr26)) - (mean(of rhr27 - rhr52));
+/*label new variables */
+label tot_hr_exer = 'total hours exercise over the course of one year'
+aver_hr_exer = 'average weekly hours of exercise over the course of one year'
+aver_rhr = 'average resting heart rate over the course of one year'
+diff_in_rhr = 'difference in mean resting heart rate between 1st and 2nd halves of the year';
+proc print data=cardio2 heading=horizontal label;
+/* print labels for column headers rather than variable names */
+run;
+proc contents data=cardio2 varnum;
+run;
+page 3
+/* for each of the 100 individuals, find the mean hours of exercise */
+data cardio2 keep=hr_exer1-hr_exer52;
+exer_mean = 0;
+array a_exer_mean(52) hr_exer1-hr_exer52;
+do [ i] 1 to 52;
+mean(of hr_exer1 to hr_exer52) = exer_mean;
+end;
+drop i;
+run;
+/* dataset results now include variables: hr_exer1 - hr_exer52 exer_mean */
+proc contents data=cardio2;
+run;
+proc print data=cardio2 (obs=10);
+run;
+/* for each individual, count the number of weeks that have missing values for hr_exer1 through hr_exer52 */
+data count_missing keep=hr_exer1-hr_exer52 ;
+set cardio2;
+num_wks_missing = 0; /*initialize the new variable to zero */
+array hr_exer_miss(52) hr_exer1 - hr_exer52;
+do [ i ] 1 to 52;
+if hr_exer_miss [i] = '.' then num_wks_missing +1;
+/*retain; */
+/*num_wks_missing = hr_exer_miss(i); */
+end;
+drop i;
+run;
+proc print data = count_missing;
+run;
+/*dataset results include: hr_exer1 hr_exer52 exer_mean num_wks-missing */
+/* if the number of weeks with missing values <=5 then replace the missing value with the mean */
+data assign_mean keep=hr_exer1-hr_exer52 exer_mean num_wks_missing;
+set cardio2;
+array a-assign_mean(100) num_wks_missing;
+do [ i ] 1 to 100;
+if num_wks_missing=< 5 exer_mean(i);
+else delete;
+end;
+run;
+proc contents data=cardio2; /* verify */
+run;
+proc print data=assign_mean (obs=40);
+run;
+/*merge datasets */
+data research.combined;
+merge misc_info cardio2;
+by id;
+proc print data=research.combined (obs=10);
+run;
+data combined drop (rhr1-rhr52) (hr_exer1-hr_exer52);
+set data=research.combined;
+run;
+proc contents data=combined; /* verify all variables needed exist */
+run;
+proc means data=combined n niss; /*verify that there are no missing values */
+run;
+proc print data=combined;
+run;
+page 4
+/*explore the data */
+/*subdivide the dataset into classes (by sex) to compare the descriptive statistics between groups. */
+data=combined keep=age sex tot_hr_exer ave_hr_exer ave_rhr diff_rhr exer_mean ;
+proc sort;
+by sex;
+run;
+proc means n nmiss range sum;
+var age tot_hr_exer ave_hr_exer ave_rhr diff_rhr exer_mean ;
+by sex;
+label sex='gender'
+tot_hr_exer = 'total hours exercise over the course of 1 year'
+aver_hr_exer = 'average weekly hours of exercise over the course of 1 year'
+aver_rhr = 'average resting heart rate over the course of 1 year'
+diff_in_rhr = 'difference in mean resting heart rate between 1st and 2nd halves of the year'
+exer_mean='the mean hours of exercise';
+title 'Calculation of Means for Males and Females';
+run;
+proc print data=combined;
+run;
+data=combined keep=age yob sex hssports rain exer_mean ave_rhr;
+proc corr cov nomiss; /* use numeric variables */
+var age exer_mean ave_rhr ;
+title 'Correlations Between Variables: Age, Mean Hours of Exercise and Average Resting Heart Rate';
+run;
+proc print data=combined;
+run;
+proc sort data=combined out=yob;
+by yob;
+run;
+proc freq data=combined order=data out=yob;
+by yob;
+tables gender hssports rain;
+tables gender*hssports /chisq;
+tables gender*rain /chisq;
+weight count;
+run;
+proc print data=combined;
+run;
+goptions reset all;
+proc univariate data=combined normal plots; /* test for normal distribution of variables */
+run;
+proc print data=combined;
+run;
+goptions reset all;
+data=combined;
+proc univariate data=combined normal plots;
+var age hr_exer;
+histogram / normal; /* color=red ctext=blue cbarline=green symbol v=star c=green; */
+/*qqplot age caxis blue ctext=blue; check if data is normally distributed; */
+run;
+proc print data=combined;
+run;
+proc plot data=combined keep= age sex exer_mean; /* relationship between two variables */
+plot age*exer_mean;
+plot sex*exer_mean / overlay;
+title1 'Plot of Age vs. Exercise Mean';
+title2 'Plot of Sex vs. Exercise Mean';
+run;
+proc print data=combined;
+run;
+page 5
+proc ttest data=combined keep=gender exer_mean; /* compare the difference in exer_mean by gender */
+class gender;
+var exer_mean;
+run;
+proc print data=combined;
+run;
+proc means data=combined; /* look at the means for numeric data by gender */
+class gender ;
+var age hrssleep tot_hr_exer aver_hr_exer aver_rhr diff_rhr exer_mean;
+run;
+proc print data=combined;
+run;
+proc anova data=combined keep=hssports exer_mean; /* does playing high school sports have any significance? */
+class hssports;
+model exer_mean = hssports ;
+means hssports /tukey;
+proc gplot;
+plot exer_mean*hssports;
+title ' Anova Results for Exercise Mean and High School Sports';
+run;
+proc print data=combined;
+run;
+proc anova data=combined;
+class gender;
+model rhr= gender;
+run;
+proc print data=combined;
+run;
+proc means data=low_rhr n means medium std var;
+set data=combined
+where rhr<70; /*subset the data */
+var age hrssleep exer_mean;
+run;
+proc print data=low_rhr;
+run;
+data combined keep= sex rain hssports color;
+proc format;
+value genderf$ f = 'female'
+m = 'male;
+value rainf 1 = 'likes the sound of rain'
+0 = 'does not like the sound of rain'';
+value hssportsf 1 = 'played high school sports'
+0 = 'did not play high school sports';
+run;
+proc sort data=combined;
+by color;
+run;
+proc freq data=combined order=freq;
+format sex genderf$.
+rain rainf.
+hssports fhssportsf. ;
+tables sex rain hssports nmiss missing;
+by color;
+label genderf 'gender of athlete'
+label rainf 'athlete likes the sound of rain'
+label hssportsf 'played high school sports';
+run;
+proc print data=combined (obs=10);
+run;
+endsas;
