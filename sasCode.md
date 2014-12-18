@@ -1,3 +1,5 @@
+To view this code formated click RAW
+
 R.Dopfel 1 August 1, 2012
 DopfelCV 
 Addendum: sample, fundamental, very generic research - SAS Code.
