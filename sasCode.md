@@ -1,3 +1,5 @@
+excerpt.
+
 - The integrity of the research is dependent upon the integrity of the data.
 
 - Within the context of a multi-faceted project at The Channing Laboratory, and including my own prior
